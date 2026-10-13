@@ -283,6 +283,135 @@
           opacity: 0;
         }
       }
+      /* ===== Output panel (live) ===== */
+      #terminal {
+        max-height: 520px;
+      }
+      .statusbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 16px;
+        border-top: 1px solid var(--border);
+        background: var(--panel2);
+        font-size: 0.75rem;
+        color: var(--muted);
+        flex-wrap: wrap;
+      }
+      .statusbar .spacer {
+        flex: 1;
+      }
+      .mini-btn {
+        background: var(--panel);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        cursor: pointer;
+      }
+      .mini-btn:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+      .spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--border);
+        border-top-color: var(--green);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        vertical-align: -2px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .tool-step {
+        border-left: 3px solid var(--purple);
+        margin: 8px 0;
+        padding: 2px 0 2px 10px;
+      }
+      .tool-step summary {
+        cursor: pointer;
+        color: var(--orange);
+        font-weight: 600;
+        outline: none;
+      }
+      .tool-step summary .tool-name {
+        color: var(--purple);
+      }
+      .tool-step .args {
+        color: var(--muted);
+        margin: 4px 0;
+        max-height: 120px;
+        overflow: auto;
+      }
+      .tool-step .result {
+        color: var(--text);
+        background: #0a0e14;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+        margin-top: 4px;
+        max-height: 200px;
+        overflow: auto;
+      }
+      .answer-box {
+        border: 1px solid var(--green);
+        border-radius: 8px;
+        background: rgba(63, 185, 80, 0.08);
+        padding: 12px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 0.88rem;
+      }
+      .answer-box .answer-title {
+        color: var(--green);
+        font-weight: 700;
+        display: block;
+        margin-bottom: 6px;
+      }
+      .error-box {
+        border: 1px solid var(--red);
+        border-radius: 8px;
+        background: rgba(248, 81, 73, 0.08);
+        color: var(--red);
+        padding: 12px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .chip {
+        display: inline-block;
+        background: rgba(88, 166, 255, 0.12);
+        border: 1px solid var(--blue);
+        color: var(--blue);
+        border-radius: 20px;
+        font-size: 0.7rem;
+        padding: 1px 9px;
+        margin: 2px 4px 2px 0;
+        font-family: Consolas, monospace;
+      }
+      .progress {
+        height: 4px;
+        background: var(--panel2);
+        overflow: hidden;
+      }
+      .progress .bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--blue), var(--green));
+        transition: width 0.3s ease;
+      }
+      button.run.stop {
+        background: var(--red);
+        color: #fff;
+      }
     </style>
   </head>
   <body>
@@ -292,19 +421,21 @@
         <span style="color: var(--blue)">Input / Output</span> Interface
       </h1>
       <p>
-        Interactive visual guide for every script in this repo. Each example
-        connects an LLM to an <b>MCP server</b> (Playwright, Airbnb, Filesystem,
-        Blender…). Pick a script, edit its <b>input query</b>, press
-        <b>▶ Run</b>, and watch the simulated <b>terminal output</b> stream
-        below.
+        Live runner for the scripts in this repo. Each example connects an LLM
+        (Ollama / Groq) to a real <b>MCP server</b> through
+        <code>web_app.py</code>. Pick a script, edit its <b>input query</b>,
+        press <b>▶ Run agent</b>, and watch the <b>live output stream</b> — tool
+        calls, observations and the final answer appear as they happen. Scripts
+        not wired into the backend show a <b>simulated</b> walkthrough instead.
       </p>
       <div>
         <span class="badge">Python 3.11+</span>
         <span class="badge">mcp_use</span>
         <span class="badge">LangChain</span>
         <span class="badge">Groq / Ollama</span>
+        <span class="badge" id="backendBadge">⏳ checking backend…</span>
         <span class="badge warn"
-          >⚠ Outputs are simulated for demonstration</span
+          >⚠ blender / filesystem / multi-server / http run simulated only</span
         >
       </div>
     </header>
@@ -328,7 +459,10 @@
       <h2 class="section-title">▶ Interactive Runner — Input → Output</h2>
       <div class="runbar">
         <select id="exampleSelect" style="max-width: 320px"></select>
-        <button class="run" id="runBtn" onclick="runExample()">▶ Run</button>
+        <button class="run" id="runBtn" onclick="runExample()">
+          ▶ Run agent
+        </button>
+        <span id="runHint" class="m" style="font-size: 0.75rem"></span>
         <button
           class="run"
           style="
@@ -380,24 +514,38 @@
 
         <div class="card out">
           <div class="card-head">
-            <span class="dot" style="background: var(--green)"></span>
+            <span class="dot" id="outDot" style="background: var(--green)"></span>
             <h2>
               🖥 OUTPUT
-              <span class="m" style="font-weight: 400; font-size: 0.75rem"
-                >(simulated terminal)</span
+              <span
+                id="outMode"
+                class="m"
+                style="font-weight: 400; font-size: 0.75rem"
+                >(idle)</span
               >
             </h2>
+            <span class="spacer" style="flex: 1"></span>
+            <button class="mini-btn" onclick="copyOutput()" title="Copy the final answer">
+              ⧉ Copy
+            </button>
           </div>
+          <div class="progress"><div class="bar" id="runProgress"></div></div>
           <div class="card-body">
             <pre
               id="terminal"
-            ><span class="m">Select an example above and press ▶ Run to see the output…</span><span class="cursor"></span></pre>
+            ><span class="m">Select an example above and press ▶ Run agent to see the output…</span><span class="cursor"></span></pre>
+          </div>
+          <div class="statusbar">
+            <span id="runStatus">Idle</span>
+            <span class="spacer"></span>
+            <span id="runTimer"></span>
+            <span id="runSteps"></span>
           </div>
         </div>
       </div>
 
       <h2 class="section-title">
-        💬 chat_example.py — Live Memory Chat Simulation
+        💬 chat_example.py — Live Memory Chat (runs against the real agent)
       </h2>
       <div class="grid">
         <div class="card in">
@@ -422,7 +570,7 @@
                 type="text"
                 id="chatInput"
                 placeholder="e.g. search Google for best restaurants in SF"
-                onkeydown="if (event.key === 'Enter') sendChat();"
+                onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendChat(); }"
               />
             </div>
             <div style="display: flex; gap: 8px">
@@ -722,7 +870,6 @@ Type 'clear' to clear conversation history
         }
       ];
 
-      <script>
       const exampleSelect = document.getElementById('exampleSelect');
       const inScript = document.getElementById('inScript');
       const inServer = document.getElementById('inServer');
@@ -734,11 +881,219 @@ Type 'clear' to clear conversation history
       const chatTerminal = document.getElementById('chatTerminal');
       const chatInput = document.getElementById('chatInput');
 
+      /* ============================================================
+         LIVE BACKEND — web_app.py streams real agent progress via SSE.
+         Scripts present in SCRIPTS are executed for real; the rest
+         fall back to a simulated streaming walkthrough.
+         ============================================================ */
+      const LIVE_SCRIPTS = new Set(['browser_use', 'airbnb_use', 'chat_example']);
+      let liveBackend = false;
+      let currentAbort: AbortController | null = null;
+      let lastAnswerText = '';
+      let timerHandle: number | null = null;
+
+      function setMode(text, color) {
+        document.getElementById('outMode').textContent = text;
+        document.getElementById('outDot').style.background = color || 'var(--green)';
+      }
+
+      function setProgress(pct) {
+        document.getElementById('runProgress').style.width = pct + '%';
+      }
+
+      function setStatus(text) {
+        document.getElementById('runStatus').innerHTML = text;
+      }
+
+      function startTimer() {
+        stopTimer();
+        const t0 = Date.now();
+        timerHandle = window.setInterval(() => {
+          document.getElementById('runTimer').textContent =
+            '⏱ ' + ((Date.now() - t0) / 1000).toFixed(1) + 's';
+        }, 200);
+      }
+
+      function stopTimer() {
+        if (timerHandle !== null) {
+          clearInterval(timerHandle);
+          timerHandle = null;
+        }
+      }
+
+      function termAppend(html) {
+        const cur = terminal.querySelector('.cursor');
+        if (cur) cur.insertAdjacentHTML('beforebegin', html);
+        else terminal.insertAdjacentHTML('beforeend', html);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+
+      function termReset() {
+        terminal.innerHTML = '<span class="cursor"></span>';
+        lastAnswerText = '';
+        setProgress(3);
+        document.getElementById('runSteps').textContent = '';
+      }
+
+      function renderToolStep(d) {
+        const args = typeof d.args === 'string' ? d.args : JSON.stringify(d.args, null, 1);
+        const step = document.createElement('div');
+        step.className = 'tool-step';
+        step.innerHTML =
+          `<details open><summary>Step ${d.step}/${d.of} → <span class="tool-name">${escapeHtml(d.tool)}</span>()</summary>` +
+          `<pre class="args">${escapeHtml(args || '')}</pre>` +
+          `<pre class="result">${escapeHtml(d.result || '(no output)')}</pre></details>`;
+        const cur = terminal.querySelector('.cursor');
+        if (cur) cur.parentElement.insertBefore(step, cur);
+        else terminal.appendChild(step);
+        // collapse older steps so the newest stays in focus
+        const all = terminal.querySelectorAll('.tool-step');
+        if (all.length > 1) all[all.length - 2].querySelector('details').removeAttribute('open');
+        terminal.scrollTop = terminal.scrollHeight;
+        document.getElementById('runSteps').textContent = `🛠 ${d.step}/${d.of} steps`;
+        setProgress(Math.min(95, 5 + (d.step / d.of) * 90));
+      }
+
+      function renderAnswer(text, meta) {
+        lastAnswerText = text;
+        const box = document.createElement('div');
+        box.className = 'answer-box';
+        box.innerHTML =
+          `<span class="answer-title">✅ FINAL ANSWER${meta ? ' · ' + meta : ''}</span>` +
+          escapeHtml(text);
+        const cur = terminal.querySelector('.cursor');
+        if (cur) cur.parentElement.insertBefore(box, cur);
+        else terminal.appendChild(box);
+        terminal.scrollTop = terminal.scrollHeight;
+        setProgress(100);
+      }
+
+      function renderError(text) {
+        const box = document.createElement('div');
+        box.className = 'error-box';
+        box.textContent = '⚠ ' + text;
+        const cur = terminal.querySelector('.cursor');
+        if (cur) cur.parentElement.insertBefore(box, cur);
+        else terminal.appendChild(box);
+        terminal.scrollTop = terminal.scrollHeight;
+        setProgress(100);
+      }
+
+      async function checkBackend() {
+        const badge = document.getElementById('backendBadge');
+        try {
+          const res = await fetch('/health');
+          const data = await res.json();
+          if (data.status === 'ok') {
+            liveBackend = true;
+            badge.textContent = `✔ backend online · LLM: ${data.llm}`;
+            badge.classList.remove('warn');
+            badge.style.color = 'var(--green)';
+            badge.style.borderColor = 'var(--green)';
+            return;
+          }
+        } catch (e) {
+          /* opened as a plain file — simulation only */
+        }
+        badge.textContent = '⚠ offline — outputs are simulated (start: uvicorn web_app:app)';
+      }
+
+      async function runLive(exampleId, query) {
+        termReset();
+        setMode('(LIVE — real agent)', 'var(--green)');
+        setStatus('<span class="spinner"></span> Running… press again to stop');
+        currentAbort = new AbortController();
+        startTimer();
+        try {
+          const res = await fetch('/api/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ script: exampleId, query }),
+            signal: currentAbort.signal,
+          });
+          if (!res.ok || !res.body) {
+            const err = await res.json().catch(() => ({ output: res.statusText }));
+            renderError(err.output || `HTTP ${res.status}`);
+            setStatus('<span class="r">Failed</span>');
+            return;
+          }
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let idx;
+            while ((idx = buf.indexOf('\n\n')) !== -1) {
+              const rawEvent = buf.slice(0, idx);
+              buf = buf.slice(idx + 2);
+              handleSSE(rawEvent);
+            }
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            setStatus('<span class="o">Stopped by user</span>');
+            termAppend('<span class="o">\n■ Run stopped.</span>\n');
+          } else {
+            renderError(String(err));
+            setStatus('<span class="r">Connection lost</span>');
+          }
+        } finally {
+          stopTimer();
+          currentAbort = null;
+          document.getElementById('runBtn').classList.remove('stop');
+          document.getElementById('runBtn').innerHTML = '▶ Run agent';
+        }
+      }
+
+      function handleSSE(rawEvent) {
+        let evName = 'message';
+        let dataStr = '';
+        for (const line of rawEvent.split('\n')) {
+          if (line.startsWith('event:')) evName = line.slice(6).trim();
+          else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+        }
+        if (!dataStr) return;
+        let data;
+        try {
+          data = JSON.parse(dataStr);
+        } catch (e) {
+          return;
+        }
+        switch (evName) {
+          case 'log':
+            termAppend(`<span class="m">${escapeHtml(data.text)}</span>\n`);
+            break;
+          case 'connected': {
+            const chips = (data.tools || [])
+              .slice(0, 24)
+              .map((t) => `<span class="chip">${escapeHtml(t)}</span>`)
+              .join('');
+            termAppend(
+              `<span class="g">✔ Connected — ${data.count} tools discovered:</span>\n${chips}\n\n`,
+            );
+            break;
+          }
+          case 'tool':
+            renderToolStep(data);
+            break;
+          case 'done':
+            renderAnswer(data.text, `${data.steps} tool steps · ${data.elapsed}s`);
+            setStatus('<span class="g">✔ Done</span>');
+            break;
+          case 'error':
+            renderError(data.message);
+            setStatus('<span class="r">✖ Error</span>');
+            break;
+        }
+      }
+
       function populateExampleSelect() {
         EXAMPLES.forEach((item) => {
           const option = document.createElement('option');
           option.value = item.id;
-          option.textContent = item.script;
+          option.textContent = item.script + (LIVE_SCRIPTS.has(item.id) ? '  ⚡ live' : '');
           exampleSelect.appendChild(option);
         });
 
@@ -753,45 +1108,175 @@ Type 'clear' to clear conversation history
         inConfig.textContent = example.config;
         inAgent.textContent = example.agent;
         inQuery.value = example.query;
+        const hint = document.getElementById('runHint');
+        if (LIVE_SCRIPTS.has(example.id) && liveBackend) {
+          hint.textContent = '⚡ runs LIVE against the real MCP agent';
+          hint.style.color = 'var(--green)';
+        } else {
+          hint.textContent = 'simulated demo output';
+          hint.style.color = 'var(--orange)';
+        }
       }
 
       function runExample() {
+        const btn = document.getElementById('runBtn');
+        // If a live run is in progress, this button acts as Stop.
+        if (currentAbort) {
+          currentAbort.abort();
+          return;
+        }
         const id = exampleSelect.value;
         const example = EXAMPLES.find((item) => item.id === id) || EXAMPLES[0];
         syncExampleToInputs(example);
-        terminal.innerHTML = example.output + '<span class="cursor"></span>';
+        const query = inQuery.value.trim();
+
+        if (liveBackend && LIVE_SCRIPTS.has(id)) {
+          if (!query) {
+            termReset();
+            renderError('Please enter a prompt before running the agent.');
+            return;
+          }
+          btn.classList.add('stop');
+          btn.innerHTML = '■ Stop';
+          runLive(id, query);
+          return;
+        }
+        simulateOutput(example);
+      }
+
+      function simulateOutput(example) {
+        termReset();
+        setMode('(simulated)', 'var(--orange)');
+        setStatus('<span class="spinner"></span> Streaming simulated output…');
+        startTimer();
+        const lines = example.output.split('\n');
+        terminal.innerHTML = '<span class="cursor"></span>';
+        let i = 0;
+        const iv = setInterval(() => {
+          if (i >= lines.length) {
+            clearInterval(iv);
+            stopTimer();
+            setStatus('<span class="o">Simulated run finished</span>');
+            setProgress(100);
+            const tmp = document.createElement('div');
+            tmp.innerHTML = example.output;
+            lastAnswerText = tmp.textContent;
+            return;
+          }
+          termAppend(lines[i] + '\n');
+          setProgress(Math.round(((i + 1) / lines.length) * 100));
+          i++;
+        }, 28);
       }
 
       function clearTerminal() {
-        terminal.innerHTML = '<span class="m">Select an example above and press ▶ Run to see the output...</span><span class="cursor"></span>';
+        if (currentAbort) currentAbort.abort();
+        stopTimer();
+        terminal.innerHTML =
+          '<span class="m">Select an example above and press ▶ Run agent to see the output…</span><span class="cursor"></span>';
+        setProgress(0);
+        setStatus('Idle');
+        setMode('(idle)');
+        document.getElementById('runTimer').textContent = '';
+        document.getElementById('runSteps').textContent = '';
+        lastAnswerText = '';
       }
 
-      function sendChat() {
-        const message = chatInput.value.trim();
-        if (!message) return;
-
-        const response = message.toLowerCase();
-        const assistantReply = response.includes('weather')
-          ? 'The current weather in Tokyo is 18°C, partly cloudy with light winds.'
-          : response.includes('restaurant')
-            ? 'I found a few strong options in San Francisco: Tartine Bakery, State Bird Provisions, and Swan Oyster Depot.'
-            : response.includes('clear')
-              ? 'Conversation history cleared.'
-              : 'I can help with that. I have access to the browser and filesystem tools through the MCP agent.';
-
-        const entry = `\n<span class="b">You:</span> ${escapeHtml(message)}\n<span class="b">Assistant:</span> <span class="g">${escapeHtml(assistantReply)}</span>\n`;
-        chatTerminal.innerHTML += entry;
-        chatInput.value = '';
-        chatTerminal.scrollTop = chatTerminal.scrollHeight;
+      function copyOutput() {
+        const text = lastAnswerText || terminal.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          setStatus('<span class="g">Copied to clipboard ✔</span>');
+        });
       }
 
+      /* ---------- Live memory chat (real agent when backend online) ---------- */
       function escapeHtml(value) {
-        return value
+        return String(value)
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
-          .replace(/\"/g, '&quot;')
+          .replace(/"/g, '&quot;')
           .replace(/'/g, '&#039;');
+      }
+
+      function chatAppend(html) {
+        chatTerminal.insertAdjacentHTML('beforeend', html);
+        chatTerminal.scrollTop = chatTerminal.scrollHeight;
+      }
+
+      async function sendChat() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        if (/^(exit|quit)$/i.test(message)) {
+          chatAppend(`\n<span class="b">You:</span> ${escapeHtml(message)}\n`);
+          chatAppend('<span class="m">Ending conversation...</span>\n');
+          chatInput.value = '';
+          return;
+        }
+        if (/^clear$/i.test(message)) {
+          chatAppend(`\n<span class="b">You:</span> ${escapeHtml(message)}\n`);
+          chatClear();
+          chatAppend('<span class="m">Conversation history cleared.</span>\n');
+          return;
+        }
+
+        chatAppend(`\n<span class="b">You:</span> ${escapeHtml(message)}\n`);
+        chatInput.value = '';
+
+        if (!liveBackend) {
+          const reply = /weather/i.test(message)
+            ? 'The current weather in Tokyo is 18°C, partly cloudy with light winds.'
+            : /restaurant/i.test(message)
+              ? 'I found a few strong options in San Francisco: Tartine Bakery, State Bird Provisions, and Swan Oyster Depot.'
+              : 'I can help with that. I have access to the browser and filesystem tools through the MCP agent.';
+          chatAppend(`<span class="b">Assistant:</span> <span class="g">${escapeHtml(reply)}</span> <span class="m">(simulated)</span>\n`);
+          return;
+        }
+
+        chatAppend('<span class="m"><span class="spinner"></span> Agent thinking…</span>\n');
+        const thinkingNode = chatTerminal.lastChild;
+        let answer = null;
+        try {
+          const res = await fetch('/api/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ script: 'chat_example', query: message }),
+          });
+          if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let idx;
+            while ((idx = buf.indexOf('\n\n')) !== -1) {
+              const rawEvent = buf.slice(0, idx);
+              buf = buf.slice(idx + 2);
+              let evName = 'message', dataStr = '';
+              for (const line of rawEvent.split('\n')) {
+                if (line.startsWith('event:')) evName = line.slice(6).trim();
+                else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+              }
+              if (!dataStr) continue;
+              let data;
+              try { data = JSON.parse(dataStr); } catch (e) { continue; }
+              if (evName === 'done') answer = data.text;
+              if (evName === 'error') answer = '⚠ ' + data.message;
+              if (evName === 'tool' && data.tool) {
+                thinkingNode.outerHTML =
+                  `<span class="m" id="chatThink"><span class="spinner"></span> 🛠 ${escapeHtml(data.tool)}…</span>\n`;
+              }
+            }
+          }
+        } catch (err) {
+          answer = '⚠ ' + String(err);
+        }
+        const node = document.getElementById('chatThink') || thinkingNode;
+        if (node && node.parentNode) node.remove();
+        chatAppend(`<span class="b">Assistant:</span> <span class="g">${escapeHtml(answer || '(no answer)')}</span>\n`);
       }
 
       function chatClear() {
@@ -800,7 +1285,7 @@ Type 'clear' to clear conversation history
       }
 
       function chatExit() {
-        chatTerminal.innerHTML += `\n<span class="m">Ending conversation...</span>`;
+        chatAppend(`\n<span class="m">Ending conversation...</span>`);
         chatInput.value = '';
       }
 
@@ -809,7 +1294,16 @@ Type 'clear' to clear conversation history
         syncExampleToInputs(selected);
       });
 
+      // Ctrl/Cmd+Enter also triggers a run from the query box.
+      inQuery.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          runExample();
+        }
+      });
+
       populateExampleSelect();
+      checkBackend().then(() => syncExampleToInputs(EXAMPLES.find((e) => e.id === exampleSelect.value) || EXAMPLES[0]));
     </script>
   </body>
 </html>
