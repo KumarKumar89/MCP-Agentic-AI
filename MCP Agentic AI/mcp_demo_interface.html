@@ -422,7 +422,7 @@
       </h1>
       <p>
         Live runner for the scripts in this repo. Each example connects an LLM
-        (Ollama / Groq) to a real <b>MCP server</b> through
+        (local Ollama) to a real <b>MCP server</b> through
         <code>web_app.py</code>. Pick a script, edit its <b>input query</b>,
         press <b>▶ Run agent</b>, and watch the <b>live output stream</b> — tool
         calls, observations and the final answer appear as they happen. Scripts
@@ -432,8 +432,8 @@
         <span class="badge">Python 3.11+</span>
         <span class="badge">mcp_use</span>
         <span class="badge">LangChain</span>
-        <span class="badge">Groq / Ollama</span>
-        <span class="badge" id="backendBadge">⏳ checking backend…</span>
+        <span class="badge">Local Ollama</span>
+        <span class="badge" id="backendBadge">Checking backend</span>
         <span class="badge warn"
           >⚠ blender / filesystem / multi-server / http run simulated only</span
         >
@@ -557,7 +557,7 @@
             <div class="kv">
               <div>
                 <div class="lbl">LLM</div>
-                <div class="val">Ollama llama3.2:3b (or Groq)</div>
+                <div class="val">Ollama llama3.2:3b</div>
               </div>
               <div>
                 <div class="lbl">Server</div>
@@ -621,7 +621,7 @@ Type 'clear' to clear conversation history
         >mcp-use</a
       >
       · Real outputs require: <code>pip install -r requirements.txt</code> +
-      Node.js (npx) + API key (.env)
+      Node.js (npx) + a running Ollama service
     </footer>
 
     <script>
@@ -633,7 +633,7 @@ Type 'clear' to clear conversation history
           id:"browser_use",
           script:"Demo/browser_use.py",
           server:"playwright (@playwright/mcp@latest)",
-          llm:"Ollama llama3.2:3b  (or Groq llama-3.1-8b-instant)",
+          llm:"Ollama llama3.2:3b",
           agent:"MCPAgent(max_steps=30), memory OFF",
           config:`{
         "mcpServers": {
@@ -667,7 +667,7 @@ Type 'clear' to clear conversation history
           id:"airbnb_use",
           script:"Demo/airbnb_use.py",
           server:"airbnb (@openbnb/mcp-server-airbnb)",
-          llm:"Ollama llama3.2:3b  (or Groq llama-3.1-8b-instant)",
+          llm:"Ollama llama3.2:3b",
           agent:"MCPAgent(max_steps=30), memory OFF",
           config:`{
         "mcpServers": {
@@ -731,7 +731,7 @@ Type 'clear' to clear conversation history
           id:"chat_example",
           script:"Demo/chat_example.py",
           server:"playwright (@playwright/mcp@latest)",
-          llm:"Ollama llama3.2:3b  (or Groq)",
+          llm:"Ollama llama3.2:3b",
           agent:"MCPAgent(max_steps=15), <span class='g'>memory_enabled=True</span>",
           config:`{
         "mcpServers": {
@@ -766,7 +766,7 @@ Type 'clear' to clear conversation history
           id:"filesystem_use",
           script:"for_practice/filesystem_use.py",
           server:"filesystem (@modelcontextprotocol/server-filesystem)",
-          llm:"ChatGroq deepseek-r1-distill-llama-70b",
+          llm:"Ollama llama3.2:3b",
           agent:"MCPAgent(max_steps=30), memory OFF",
           config:`{
         "mcpServers": {
@@ -888,9 +888,9 @@ Type 'clear' to clear conversation history
          ============================================================ */
       const LIVE_SCRIPTS = new Set(['browser_use', 'airbnb_use', 'chat_example']);
       let liveBackend = false;
-      let currentAbort: AbortController | null = null;
+      let currentAbort = null;
       let lastAnswerText = '';
-      let timerHandle: number | null = null;
+      let timerHandle = null;
 
       function setMode(text, color) {
         document.getElementById('outMode').textContent = text;

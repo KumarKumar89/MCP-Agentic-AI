@@ -1,6 +1,6 @@
 # MCP-USE Setup Guide
 ***************** use python 3.11+ version  ******************
-This guide will help you set up and configure the [mcp-use](https://github.com/pietrozullo/mcp-use) repository for use with **Groq** and **Cursor**.
+This guide will help you set up and configure the [mcp-use](https://github.com/pietrozullo/mcp-use) repository for use with **local Ollama** and **Cursor**.
 
 ---
 
@@ -25,8 +25,8 @@ source venv/bin/activate  # On Windows use: venv\Scripts\activate
 
 ---
 
-### 3. Switched from OpenAI to Groq  
-To support Groq, a few edits have been made in the codebase replacing OpenAI-specific usage with Groq for added flexibility.
+### 3. Use the Local Ollama Model
+Demo scripts use Ollama locally by default. Configure `OLLAMA_BASE_URL` and `FREE_LLM_MODEL` in `.env` if needed.
 
 ---
 
@@ -65,3 +65,13 @@ Example:
 OUTPUT :
 ![alt text](image-2.png)
 ---
+
+## Run the Web UI in GitHub Codespaces
+
+From the `MCP Agentic AI` directory, start the app with:
+
+```bash
+python3 web_app.py
+```
+
+Open forwarded port **1455** in the Codespaces Ports tab.

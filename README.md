@@ -1,5 +1,5 @@
 MCP-USE Setup Guide
-**\*\*\*\***\***\*\*\*\*** use python 3.11+ version **\*\*\*\***\*\***\*\*\*\*** This guide will help you set up and configure the mcp-use repository for use with Groq and Cursor.
+**\*\*\*\***\***\*\*\*\*** use python 3.11+ version **\*\*\*\***\*\***\*\*\*\*** This guide will help you set up and configure the mcp-use repository for use with Ollama and Cursor.
 
 🔧 Setup Instructions
 
@@ -12,8 +12,8 @@ MCP-USE Setup Guide
    python -m venv venv
    source venv/bin/activate # On Windows use: venv\Scripts\activate
 
-3. Switched from OpenAI to Groq
-   To support Groq, a few edits have been made in the codebase replacing OpenAI-specific usage with Groq for added flexibility.
+3. Use the Local Ollama Model
+   Demo scripts use Ollama locally by default. Set OLLAMA_BASE_URL and FREE_LLM_MODEL in .env to customize the model.
 
 4. Locate the Example Config File
    Inside the Demo folder, you'll find various configuration files. Choose the appropriate one based on your use case.
@@ -41,7 +41,7 @@ OUTPUT :
 
 # Output Explanation of This Repo (List-Wise)
 
-This repo is a **demo/tutorial project** built on top of [mcp-use](https://github.com/mcp-use/mcp-use). It connects LLMs (Groq / Ollama / OpenAI / Anthropic) to MCP servers (Playwright, Airbnb, Filesystem, Blender). Below is what each script **outputs** when you run it.
+This repo is a **demo/tutorial project** built on top of [mcp-use](https://github.com/mcp-use/mcp-use). It connects LLMs (local Ollama by default, plus provider-specific examples) to MCP servers (Playwright, Airbnb, Filesystem, Blender). Below is what each script **outputs** when you run it.
 
 ---
 
@@ -127,7 +127,7 @@ Every script follows the same console output flow:
 
 ## ⚠️ Key Notes
 
-- **Default LLM is free local Ollama** (`llama3.2:3b`) in Demo scripts — set `USE_LOCAL_LLM=false` + `GROQ_API_KEY` in `.env` to use Groq instead.
+- **Default LLM is free local Ollama** (`llama3.2:3b`) in Demo scripts — set `OLLAMA_BASE_URL` and `FREE_LLM_MODEL` in `.env` to customize it.
 - `blender_use.py`, `multi_server_example.py`, and `http_example.py` still use **Anthropic/OpenAI** directly — they will fail without those API keys.
 - You need **Node.js (npx)** installed for the MCP servers to launch.
 

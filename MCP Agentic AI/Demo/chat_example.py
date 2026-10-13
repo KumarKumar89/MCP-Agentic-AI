@@ -17,26 +17,17 @@ from mcp_use import MCPAgent, MCPClient
 
 
 def create_llm():
-    """Use a free local LLM by default; Groq is only used when explicitly enabled."""
+    """Use the local Ollama model."""
     load_dotenv()
 
-    if os.getenv("USE_LOCAL_LLM", "true").lower() not in {"0", "false", "no"}:
-        ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        model_name = os.getenv("FREE_LLM_MODEL", "llama3.2:3b")
-        return ChatOpenAI(
-            base_url=ollama_base_url,
-            api_key="ollama",
-            model=model_name,
-            temperature=0,
-        )
-
-    groq_key = os.getenv("GROQ_API_KEY")
-    if groq_key:
-        from langchain_groq import ChatGroq
-
-        return ChatGroq(api_key=groq_key, model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"))
-
-    raise RuntimeError("No free local model or Groq key is configured.")
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    model_name = os.getenv("FREE_LLM_MODEL", "llama3.2:3b")
+    return ChatOpenAI(
+        base_url=ollama_base_url,
+        api_key="ollama",
+        model=model_name,
+        temperature=0,
+    )
 
 
 async def run_memory_chat():

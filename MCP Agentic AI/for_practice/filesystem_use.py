@@ -9,9 +9,10 @@ for the server.
 """
 
 import asyncio
+import os
 
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 
 from mcp_use import MCPAgent, MCPClient
 
@@ -37,11 +38,12 @@ async def main():
     # Create MCPClient from config file
     client = MCPClient.from_dict(config)
     # Create LLM
-    # llm = ChatOpenAI(model="gpt-4o")
-    # llm = init_chat_model(model="llama-3.1-8b-instant", model_provider="groq")
-    # llm = ChatAnthropic(model="claude-3-")
-    # llm = ChatGroq(model="llama3-8b-8192")
-    llm = ChatGroq(model="deepseek-r1-distill-llama-70b")
+    llm = ChatOpenAI(
+        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+        api_key="ollama",
+        model=os.getenv("FREE_LLM_MODEL", "llama3.2:3b"),
+        temperature=0,
+    )
 
     # Create agent with the client
     agent = MCPAgent(llm=llm, client=client, max_steps=30)

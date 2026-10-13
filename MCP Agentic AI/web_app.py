@@ -13,6 +13,8 @@ from mcp_use import MCPAgent, MCPClient
 app = FastAPI(title="MCP-Agentic-AI Web UI", version="1.1.0")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(BASE_DIR, "mcp_demo_interface.html")
+APP_HOST = os.getenv("HOST", "0.0.0.0")
+APP_PORT = int(os.getenv("PORT", "1455"))
 
 # script_name -> (config file, agent kwargs, default query)
 SCRIPTS: dict[str, tuple[str, dict[str, Any], str]] = {
@@ -35,27 +37,16 @@ SCRIPTS: dict[str, tuple[str, dict[str, Any], str]] = {
 
 
 def create_llm():
-    """Prefer the free local Ollama model; fall back to valid Groq settings only if configured."""
+    """Create the local Ollama chat model."""
     load_dotenv()
-
-    if os.getenv("USE_LOCAL_LLM", "true").lower() not in {"0", "false", "no"}:
-        ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        model_name = os.getenv("FREE_LLM_MODEL", "llama3.2:3b")
-        return ChatOpenAI(
-            base_url=ollama_base_url,
-            api_key="ollama",
-            model=model_name,
-            temperature=0,
-        )
-
-    groq_key = os.getenv("GROQ_API_KEY")
-    if groq_key:
-        from langchain_groq import ChatGroq
-
-        return ChatGroq(api_key=groq_key, model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"))
-
-    raise RuntimeError("No free local model or Groq API key is configured.")
-
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    model_name = os.getenv("FREE_LLM_MODEL", "llama3.2:3b")
+    return ChatOpenAI(
+        base_url=ollama_base_url,
+        api_key="ollama",
+        model=model_name,
+        temperature=0,
+    )
 
 def sse(event: str, data: Any) -> str:
     """Format one Server-Sent Event for the live output stream."""
@@ -102,7 +93,7 @@ async def run_agent_stream(script_name: str, query: str):
     try:
         llm = create_llm()
     except Exception as exc:
-        yield sse("error", {"message": f"LLM unavailable: {exc} Start Ollama or set GROQ_API_KEY in .env."})
+        yield sse("error", {"message": f"LLM unavailable: {exc} Ensure Ollama is running."})
         return
 
     model_name = getattr(llm, "model_name", None) or getattr(llm, "model", "?")
@@ -179,7 +170,7 @@ async def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "scripts": sorted(SCRIPTS),
-        "llm": "local-ollama" if os.getenv("USE_LOCAL_LLM", "true").lower() not in {"0", "false", "no"} else "groq",
+        "llm": "local-ollama",
     }
 
 
@@ -208,4 +199,4 @@ async def api_run(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("web_app:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("web_app:app", host=APP_HOST, port=APP_PORT, reload=False)
