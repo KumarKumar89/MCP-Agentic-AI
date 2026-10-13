@@ -1,3 +1,6 @@
 mcp_use
 langchain_groq
 langchain-openai
+fastapi
+uvicorn[standard]
+python-dotenv

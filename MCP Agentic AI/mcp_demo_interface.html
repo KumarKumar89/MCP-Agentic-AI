@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MCP-Agentic-AI — Input / Output Interface</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --panel2: #1c2330;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --green: #3fb950;
+        --blue: #58a6ff;
+        --orange: #d29922;
+        --red: #f85149;
+        --purple: #bc8cff;
+        --cyan: #39c5cf;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        line-height: 1.5;
+      }
+      header {
+        padding: 28px 24px 18px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #161b22, #0d1117);
+      }
+      header h1 {
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      header p {
+        color: var(--muted);
+        margin-top: 6px;
+        max-width: 900px;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        padding: 2px 9px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        margin-right: 6px;
+        margin-top: 8px;
+      }
+      .badge.warn {
+        color: var(--orange);
+        border-color: var(--orange);
+      }
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .card-head {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--panel2);
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .card-head h2 {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      .card-body {
+        padding: 16px;
+      }
+      .lbl {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .lbl::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        display: inline-block;
+      }
+      .in .lbl::before {
+        background: var(--blue);
+      }
+      .out .lbl::before {
+        background: var(--green);
+      }
+      textarea,
+      select,
+      input[type="text"] {
+        width: 100%;
+        background: #0d1117;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.82rem;
+        resize: vertical;
+      }
+      textarea:focus,
+      select:focus,
+      input:focus {
+        outline: none;
+        border-color: var(--blue);
+      }
+      .kv {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .kv > div {
+        flex: 1;
+        min-width: 140px;
+      }
+      .kv .val {
+        font-family: Consolas, monospace;
+        font-size: 0.8rem;
+        color: var(--cyan);
+        background: #0d1117;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 9px;
+      }
+      pre {
+        background: #0d1117;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.78rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 340px;
+        overflow-y: auto;
+      }
+      .g {
+        color: var(--green);
+      }
+      .b {
+        color: var(--blue);
+      }
+      .o {
+        color: var(--orange);
+      }
+      .r {
+        color: var(--red);
+      }
+      .p {
+        color: var(--purple);
+      }
+      .m {
+        color: var(--muted);
+      }
+      .runbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 16px 0;
+        flex-wrap: wrap;
+      }
+      button.run {
+        background: var(--green);
+        color: #04140a;
+        border: none;
+        padding: 9px 22px;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: 0.15s;
+      }
+      button.run:hover {
+        filter: brightness(1.15);
+      }
+      button.run:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .section-title {
+        font-size: 1.05rem;
+        margin: 26px 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+        background: var(--panel);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        background: var(--panel2);
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      td code {
+        color: var(--cyan);
+        font-size: 0.78rem;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .ok {
+        color: var(--green);
+      }
+      .warn {
+        color: var(--orange);
+      }
+      footer {
+        padding: 20px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.78rem;
+        border-top: 1px solid var(--border);
+        margin-top: 30px;
+      }
+      .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 14px;
+        background: var(--green);
+        vertical-align: text-bottom;
+        animation: blink 1s steps(1) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>
+        🧠 MCP-Agentic-AI —
+        <span style="color: var(--blue)">Input / Output</span> Interface
+      </h1>
+      <p>
+        Interactive visual guide for every script in this repo. Each example
+        connects an LLM to an <b>MCP server</b> (Playwright, Airbnb, Filesystem,
+        Blender…). Pick a script, edit its <b>input query</b>, press
+        <b>▶ Run</b>, and watch the simulated <b>terminal output</b> stream
+        below.
+      </p>
+      <div>
+        <span class="badge">Python 3.11+</span>
+        <span class="badge">mcp_use</span>
+        <span class="badge">LangChain</span>
+        <span class="badge">Groq / Ollama</span>
+        <span class="badge warn"
+          >⚠ Outputs are simulated for demonstration</span
+        >
+      </div>
+    </header>
+
+    <main>
+      <h2 class="section-title">📋 Repo Overview — Scripts at a Glance</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Script</th>
+            <th>MCP Server</th>
+            <th>LLM</th>
+            <th>Input Query</th>
+            <th>Output</th>
+          </tr>
+        </thead>
+        <tbody id="overviewBody"></tbody>
+      </table>
+
+      <h2 class="section-title">▶ Interactive Runner — Input → Output</h2>
+      <div class="runbar">
+        <select id="exampleSelect" style="max-width: 320px"></select>
+        <button class="run" id="runBtn" onclick="runExample()">▶ Run</button>
+        <button
+          class="run"
+          style="
+            background: var(--panel2);
+            color: var(--text);
+            border: 1px solid var(--border);
+          "
+          onclick="clearTerminal()"
+        >
+          🗑 Clear
+        </button>
+      </div>
+
+      <div class="grid">
+        <div class="card in">
+          <div class="card-head">
+            <span class="dot" style="background: var(--blue)"></span>
+            <h2>⌨ INPUT</h2>
+          </div>
+          <div class="card-body">
+            <div class="kv">
+              <div>
+                <div class="lbl">Script</div>
+                <div class="val" id="inScript">—</div>
+              </div>
+              <div>
+                <div class="lbl">MCP Server</div>
+                <div class="val" id="inServer">—</div>
+              </div>
+              <div>
+                <div class="lbl">LLM</div>
+                <div class="val" id="inLLM">—</div>
+              </div>
+            </div>
+            <div style="margin-bottom: 10px">
+              <div class="lbl">MCP Config (JSON)</div>
+              <pre id="inConfig">—</pre>
+            </div>
+            <div style="margin-bottom: 10px">
+              <div class="lbl">Agent Settings</div>
+              <div class="val" id="inAgent" style="display: block">—</div>
+            </div>
+            <div>
+              <div class="lbl">📝 User Query (editable)</div>
+              <textarea id="inQuery" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card out">
+          <div class="card-head">
+            <span class="dot" style="background: var(--green)"></span>
+            <h2>
+              🖥 OUTPUT
+              <span class="m" style="font-weight: 400; font-size: 0.75rem"
+                >(simulated terminal)</span
+              >
+            </h2>
+          </div>
+          <div class="card-body">
+            <pre
+              id="terminal"
+            ><span class="m">Select an example above and press ▶ Run to see the output…</span><span class="cursor"></span></pre>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section-title">
+        💬 chat_example.py — Live Memory Chat Simulation
+      </h2>
+      <div class="grid">
+        <div class="card in">
+          <div class="card-head">
+            <span class="dot" style="background: var(--purple)"></span>
+            <h2>⌨ Chat Input</h2>
+          </div>
+          <div class="card-body">
+            <div class="kv">
+              <div>
+                <div class="lbl">LLM</div>
+                <div class="val">Ollama llama3.2:3b (or Groq)</div>
+              </div>
+              <div>
+                <div class="lbl">Server</div>
+                <div class="val">playwright (browser_mcp.json)</div>
+              </div>
+            </div>
+            <div style="margin-bottom: 10px">
+              <div class="lbl">📝 Type a message</div>
+              <input
+                type="text"
+                id="chatInput"
+                placeholder="e.g. search Google for best restaurants in SF"
+                onkeydown="if (event.key === 'Enter') sendChat();"
+              />
+            </div>
+            <div style="display: flex; gap: 8px">
+              <button class="run" style="flex: 1" onclick="sendChat()">
+                Send
+              </button>
+              <button
+                class="run"
+                style="flex: 1; background: var(--orange); color: #1a1200"
+                onclick="chatClear()"
+              >
+                clear
+              </button>
+              <button
+                class="run"
+                style="flex: 1; background: var(--red); color: #2b0504"
+                onclick="chatExit()"
+              >
+                exit
+              </button>
+            </div>
+            <p class="m" style="margin-top: 10px; font-size: 0.75rem">
+              Mirrors <code>chat_example.py</code>: type <code>clear</code> to
+              wipe memory, <code>exit</code>/<code>quit</code> to end. Memory is
+              ON — the agent remembers previous messages.
+            </p>
+          </div>
+        </div>
+        <div class="card out">
+          <div class="card-head">
+            <span class="dot" style="background: var(--green)"></span>
+            <h2>🖥 Chat Output</h2>
+          </div>
+          <div class="card-body">
+            <pre id="chatTerminal"><span class="m">Initializing chat...
+<span class="p">===== Interactive MCP Chat =====</span>
+Type 'exit' or 'quit' to end the conversation
+Type 'clear' to clear conversation history
+<span class="p">==================================</span></span></pre>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      MCP-Agentic-AI · Based on
+      <a href="https://github.com/mcp-use/mcp-use" style="color: var(--blue)"
+        >mcp-use</a
+      >
+      · Real outputs require: <code>pip install -r requirements.txt</code> +
+      Node.js (npx) + API key (.env)
+    </footer>
+
+    <script>
+      /* ============================================================
+         DATA: every script in the repo with its INPUT and OUTPUT
+         ============================================================ */
+      const EXAMPLES = [
+        {
+          id:"browser_use",
+          script:"Demo/browser_use.py",
+          server:"playwright (@playwright/mcp@latest)",
+          llm:"Ollama llama3.2:3b  (or Groq llama-3.1-8b-instant)",
+          agent:"MCPAgent(max_steps=30), memory OFF",
+          config:`{
+        "mcpServers": {
+          "playwright": {
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"],
+            "env": { "DISPLAY": ":1" }
+          }
+        }
+      }`,
+          query:"Find the best restaurant in San Francisco BROWSER USING GOOGLE SEARCH",
+          output:`<span class="m">Initializing MCP client...
+      Connecting to server: <span class="b">playwright</span> (npx @playwright/mcp@latest)
+      <span class="g">✔ Connected. Discovered 12 tools:</span> browser_navigate, browser_click,
+        browser_snapshot, browser_type, browser_search, ...
+
+      <span class="o">Agent step 1:</span> Calling tool <span class="p">browser_navigate</span> → https://www.google.com
+      <span class="o">Agent step 2:</span> Calling tool <span class="p">browser_type</span>  → "best restaurant in San Francisco"
+      <span class="o">Agent step 3:</span> Calling tool <span class="p">browser_snapshot</span> → reading search results
+      <span class="o">Agent step 4:</span> Calling tool <span class="p">browser_click</span>   → opening top result
+      <span class="o">Agent step 5:</span> Calling tool <span class="p">browser_snapshot</span> → reading page content
+
+      <span class="g">Result: Based on the Google search, the best restaurants in
+      San Francisco are:</span>
+        1. **Tartine Bakery** — famous for pastries &amp; sourdough (Mission District)
+        2. **State Bird Provisions** — innovative Californian small plates
+        3. **Swan Oyster Depot** — classic seafood counter (Nob Hill)
+      The browser was controlled end-to-end via the Playwright MCP server.`
+        },
+        {
+          id:"airbnb_use",
+          script:"Demo/airbnb_use.py",
+          server:"airbnb (@openbnb/mcp-server-airbnb)",
+          llm:"Ollama llama3.2:3b  (or Groq llama-3.1-8b-instant)",
+          agent:"MCPAgent(max_steps=30), memory OFF",
+          config:`{
+        "mcpServers": {
+          "airbnb": {
+            "command": "npx",
+            "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"]
+          }
+        }
+      }`,
+          query:"Find me a place to stay in Barcelona for 2 adults for one week, starting November 1st, 2025. Show me the top 3 options.",
+          output:`<span class="m">Initializing MCP client...
+      Connecting to server: <span class="b">airbnb</span> (npx @openbnb/mcp-server-airbnb)
+      <span class="g">✔ Connected. Discovered tools:</span> airbnb_search, airbnb_get_listing, ...
+
+      <span class="o">Agent step 1:</span> Calling tool <span class="p">airbnb_search</span>
+               location=Barcelona  guests=2  checkin=2025-11-01  nights=7
+      <span class="o">Agent step 2:</span> Filtering &amp; ranking results...
+
+      <span class="g">Result: Here are the top 3 Airbnb options in Barcelona for 2 adults
+      (Nov 1–8, 2025):</span>
+
+        1. ⭐ 4.92 · "Sunny Eixample Flat" — €98/night (€686 total)
+           Modern 1BR, 5 min from Sagrada Família
+           https://airbnb.com/rooms/xxxxx1
+        2. ⭐ 4.87 · "Gothic Quarter Studio" — €85/night (€595 total)
+           Historic building, central location
+           https://airbnb.com/rooms/xxxxx2
+        3. ⭐ 4.79 · "Beachside Gràcia Room" — €72/night (€504 total)
+           Near Barceloneta beach, private room
+           https://airbnb.com/rooms/xxxxx3`
+        },
+        {
+          id:"blender_use",
+          script:"Demo/blender_use.py",
+          server:"blender (uvx blender-mcp, WebSocket)",
+          llm:"ChatAnthropic claude-3-5-sonnet  ⚠ needs ANTHROPIC_API_KEY",
+          agent:"MCPAgent(max_steps=30), memory OFF",
+          config:`{
+        "mcpServers": {
+          "blender": { "command": "uvx", "args": ["blender-mcp"] }
+        }
+      }   // + Blender addon (ahujasid/blender-mcp) must be running`,
+          query:"Create an inflatable cube with soft material and a plane as ground.",
+          output:`<span class="m">Initializing MCP client...
+      Connecting to server: <span class="b">blender</span> (uvx blender-mcp via WebSocket)
+      <span class="g">✔ Connected. Discovered tools:</span> create_object, set_material,
+        execute_blender_code, get_scene_info, ...
+
+      <span class="o">Agent step 1:</span> Calling tool <span class="p">create_object</span>   → type=CUBE, name="InflatableCube"
+      <span class="o">Agent step 2:</span> Calling tool <span class="p">set_material</span>     → soft rubber material (high subsurf)
+      <span class="o">Agent step 3:</span> Calling tool <span class="p">create_object</span>   → type=PLANE, name="Ground"
+      <span class="o">Agent step 4:</span> Calling tool <span class="p">execute_blender_code</span> → add subdivision + cast modifier
+
+      <span class="g">Result: ✅ Scene created in Blender:</span>
+        • "InflatableCube" — cube with Subdivision + Cast modifiers
+          (soft, puffy inflatable look), rubber material
+        • "Ground" — plane at Z=0
+      <span class="m">➜ Open your Blender viewport to see the 3D result.</span>`
+        },
+        {
+          id:"chat_example",
+          script:"Demo/chat_example.py",
+          server:"playwright (@playwright/mcp@latest)",
+          llm:"Ollama llama3.2:3b  (or Groq)",
+          agent:"MCPAgent(max_steps=15), <span class='g'>memory_enabled=True</span>",
+          config:`{
+        "mcpServers": {
+          "playwright": {
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"],
+            "env": { "DISPLAY": ":1" }
+          }
+        }
+      }`,
+          query:"(interactive loop — see the 💬 Live Chat section below)",
+          output:`<span class="m">Initializing chat...</span>
+      <span class="p">===== Interactive MCP Chat =====</span>
+      Type 'exit' or 'quit' to end the conversation
+      Type 'clear' to clear conversation history
+      <span class="p">==================================</span>
+
+      <span class="b">You:</span> search google for the weather in Tokyo
+      <span class="b">Assistant:</span> <span class="g">The current weather in Tokyo is 18°C, partly
+      cloudy with light winds…</span>
+
+      <span class="b">You:</span> what about the next day?      <span class="m">← memory works!</span>
+      <span class="b">Assistant:</span> <span class="g">Tomorrow Tokyo will be 20°C and sunny…</span>
+
+      <span class="b">You:</span> clear
+      <span class="m">Conversation history cleared.</span>
+
+      <span class="b">You:</span> exit
+      <span class="m">Ending conversation...</span>`
+        },
+        {
+          id:"filesystem_use",
+          script:"for_practice/filesystem_use.py",
+          server:"filesystem (@modelcontextprotocol/server-filesystem)",
+          llm:"ChatGroq deepseek-r1-distill-llama-70b",
+          agent:"MCPAgent(max_steps=30), memory OFF",
+          config:`{
+        "mcpServers": {
+          "filesystem": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "@modelcontextprotocol/server-filesystem",
+              "/home/pietro/projects/mcp-use/"   // ⚠ change to YOUR path
+            ]
+          }
+        }
+      }`,
+          query:"Hello can you give me a list of files and directories in the current directory",
+          output:`<span class="m">Initializing MCP client...
+      Connecting to server: <span class="b">filesystem</span> (npx @modelcontextprotocol/server-filesystem)
+      <span class="g">✔ Connected. Discovered tools:</span> read_file, write_file,
+        list_directory, create_directory, ...
+
+      <span class="o">Agent step 1:</span> Calling tool <span class="p">list_directory</span>
+               path=/home/pietro/projects/mcp-use/
+
+      <span class="g">Result: Here are the files and directories in the current folder:</span>
+        📁 examples/
+        📁 mcp_use/
+        📁 tests/
+        📄 README.md
+        📄 pyproject.toml
+        📄 LICENSE
+
+      <span class="m">⚠ NOTE: the path is hardcoded to /home/pietro/... — edit
+      filesystem_use.py and change it to your own directory.</span>`
+        },
+        {
+          id:"multi_server_example",
+          script:"for_practice/multi_server_example.py",
+          server:"airbnb + playwright + filesystem  (3 servers!)",
+          llm:"ChatAnthropic claude-3-5-sonnet  ⚠ needs ANTHROPIC_API_KEY",
+          agent:"MCPAgent(max_steps=30), memory OFF",
+          config:`{
+        "mcpServers": {
+          "airbnb":     { "command": "npx", "args": ["-y","@openbnb/mcp-server-airbnb","--ignore-robots-txt"] },
+          "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"], "env": {"DISPLAY":":1"} },
+          "filesystem": { "command": "npx", "args": ["-y","@modelcontextprotocol/server-filesystem","/home/pietro/projects/mcp-use/"] }
+        }
+      }`,
+          query:"Search for a nice place to stay in Barcelona on Airbnb, then use Google to find nearby restaurants and attractions. Write the result in the current directory in restarant.txt",
+          output:`<span class="m">Initializing MCP client with <span class="b">3 servers</span>...
+      ✔ airbnb     — connected (2 tools)
+      ✔ playwright — connected (12 tools)
+      ✔ filesystem — connected (6 tools)
+      <span class="g">✔ 20 tools available to the agent.</span>
+
+      <span class="o">Step 1 → airbnb:</span>     <span class="p">airbnb_search</span>("Barcelona, Nov 2025")
+      <span class="o">Step 2 → playwright:</span> <span class="p">browser_navigate</span> google.com
+      <span class="o">Step 3 → playwright:</span> <span class="p">browser_type</span> "best restaurants near Barcelona Gothic Quarter"
+      <span class="o">Step 4 → playwright:</span> <span class="p">browser_snapshot</span> → read results
+      <span class="o">Step 5 → filesystem:</span> <span class="p">write_file</span> "restarant.txt"
+
+      <span class="g">Result:</span> I found a highly-rated Airbnb in the Gothic Quarter and
+      nearby restaurants including <b>Can Culleretes</b> (oldest restaurant
+      in Barcelona), <b>El Xampanyet</b> and <b>La Boucca</b>. Full details have
+      been written to <span class="p">restarant.txt</span> ✅
+
+      <span class="m">--- restarant.txt (created on disk) ---
+      Barcelona Stay + Restaurants
+      1. Stay: Gothic Quarter Studio (€85/night)
+      2. Can Culleretes — Catalan cuisine since 1786
+      3. El Xampanyet — tapas &amp; cava
+      4. La Boucca — wood-fired pizza
+      -------------------------------------</span>`
+        },
+        {
+          id:"http_example",
+          script:"for_practice/http_example.py",
+          server:"playwright over HTTP/SSE (localhost:8931)",
+          llm:"ChatOpenAI gpt-4o  ⚠ needs OPENAI_API_KEY",
+          agent:"MCPAgent(max_steps=30), memory OFF",
+          config:`{
+        "mcpServers": {
+          "http": { "url": "http://localhost:8931/sse" }
+        }
+      }
+      // Prerequisite — run in another terminal:
+      //   npx @playwright/mcp@latest --port 8931`,
+          query:"Find the best restaurant in San Francisco USING GOOGLE SEARCH",
+          output:`<span class="m">Initializing MCP client...
+      Connecting to remote server: <span class="b">http://localhost:8931/sse</span> (SSE transport)
+      <span class="g">✔ Connected. Discovered 12 browser tools.</span>
+
+      <span class="o">Agent step 1:</span> <span class="p">browser_navigate</span> → https://www.google.com
+      <span class="o">Agent step 2:</span> <span class="p">browser_type</span>    → "best restaurant in San Francisco"
+      <span class="o">Agent step 3:</span> <span class="p">browser_snapshot</span> → read search results
+      <span class="o">Agent step 4:</span> <span class="p">browser_click</span>   → open Maps result
+
+      <span class="g">Result: The top-rated restaurant in San Francisco is
+      "Tartine Bakery" (4.6★, 3,000+ reviews)…</span>
+
+      <span class="m">⚠ Unlike browser_use.py (stdio subprocess), this connects over
+      HTTP/SSE to a server you must start manually on port 8931.</span>`
+        }
+      ];
+
+      <script>
+      const exampleSelect = document.getElementById('exampleSelect');
+      const inScript = document.getElementById('inScript');
+      const inServer = document.getElementById('inServer');
+      const inLLM = document.getElementById('inLLM');
+      const inConfig = document.getElementById('inConfig');
+      const inAgent = document.getElementById('inAgent');
+      const inQuery = document.getElementById('inQuery');
+      const terminal = document.getElementById('terminal');
+      const chatTerminal = document.getElementById('chatTerminal');
+      const chatInput = document.getElementById('chatInput');
+
+      function populateExampleSelect() {
+        EXAMPLES.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.script;
+          exampleSelect.appendChild(option);
+        });
+
+        exampleSelect.value = EXAMPLES[0].id;
+        syncExampleToInputs(EXAMPLES[0]);
+      }
+
+      function syncExampleToInputs(example) {
+        inScript.textContent = example.script;
+        inServer.textContent = example.server;
+        inLLM.textContent = example.llm;
+        inConfig.textContent = example.config;
+        inAgent.textContent = example.agent;
+        inQuery.value = example.query;
+      }
+
+      function runExample() {
+        const id = exampleSelect.value;
+        const example = EXAMPLES.find((item) => item.id === id) || EXAMPLES[0];
+        syncExampleToInputs(example);
+        terminal.innerHTML = example.output + '<span class="cursor"></span>';
+      }
+
+      function clearTerminal() {
+        terminal.innerHTML = '<span class="m">Select an example above and press ▶ Run to see the output...</span><span class="cursor"></span>';
+      }
+
+      function sendChat() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        const response = message.toLowerCase();
+        const assistantReply = response.includes('weather')
+          ? 'The current weather in Tokyo is 18°C, partly cloudy with light winds.'
+          : response.includes('restaurant')
+            ? 'I found a few strong options in San Francisco: Tartine Bakery, State Bird Provisions, and Swan Oyster Depot.'
+            : response.includes('clear')
+              ? 'Conversation history cleared.'
+              : 'I can help with that. I have access to the browser and filesystem tools through the MCP agent.';
+
+        const entry = `\n<span class="b">You:</span> ${escapeHtml(message)}\n<span class="b">Assistant:</span> <span class="g">${escapeHtml(assistantReply)}</span>\n`;
+        chatTerminal.innerHTML += entry;
+        chatInput.value = '';
+        chatTerminal.scrollTop = chatTerminal.scrollHeight;
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function chatClear() {
+        chatTerminal.innerHTML = `<span class="m">Initializing chat...\n<span class="p">===== Interactive MCP Chat =====</span>\nType 'exit' or 'quit' to end the conversation\nType 'clear' to clear conversation history\n<span class="p">==================================</span></span>`;
+        chatInput.value = '';
+      }
+
+      function chatExit() {
+        chatTerminal.innerHTML += `\n<span class="m">Ending conversation...</span>`;
+        chatInput.value = '';
+      }
+
+      exampleSelect.addEventListener('change', (event) => {
+        const selected = EXAMPLES.find((item) => item.id === event.target.value) || EXAMPLES[0];
+        syncExampleToInputs(selected);
+      });
+
+      populateExampleSelect();
+    </script>
+  </body>
+</html>

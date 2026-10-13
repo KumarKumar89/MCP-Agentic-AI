@@ -1,5 +1,5 @@
 MCP-USE Setup Guide
-********\********* use python 3.11+ version ********\*\********* This guide will help you set up and configure the mcp-use repository for use with Groq and Cursor.
+**\*\*\*\***\***\*\*\*\*** use python 3.11+ version **\*\*\*\***\*\***\*\*\*\*** This guide will help you set up and configure the mcp-use repository for use with Groq and Cursor.
 
 🔧 Setup Instructions
 
@@ -38,6 +38,98 @@ Paste this in Cursor settings under the MCP section:
 Example:
 
 OUTPUT :
+
+# Output Explanation of This Repo (List-Wise)
+
+This repo is a **demo/tutorial project** built on top of [mcp-use](https://github.com/mcp-use/mcp-use). It connects LLMs (Groq / Ollama / OpenAI / Anthropic) to MCP servers (Playwright, Airbnb, Filesystem, Blender). Below is what each script **outputs** when you run it.
+
+---
+
+## 📁 `Demo/` folder
+
+### 1. `browser_use.py` → Web Browsing Output
+
+- **Input query:** _"Find the best restaurant in San Francisco BROWSER USING GOOGLE SEARCH"_
+- **Server used:** Playwright MCP (`browser_mcp.json`)
+- **Output:** Agent opens a browser via Playwright, performs a Google search, reads results, and prints a **final text answer** like:
+  ```
+  Result: The best restaurants in San Francisco are X, Y, Z ...
+  ```
+- Console also shows step-by-step tool calls (browser navigate, click, read page).
+
+### 2. `chat_example.py` → Interactive Chat Output
+
+- **Output is a live terminal chat loop:**
+
+  ```
+  Initializing chat...
+  ===== Interactive MCP Chat =====
+  Type 'exit' or 'quit' to end the conversation
+  Type 'clear' to clear conversation history
+  ==================================
+
+  You: <your question>
+  Assistant: <answer with memory of previous messages>
+  ```
+
+- Keeps **conversation history** (memory_enabled=True). `clear` resets it, `exit` quits.
+
+### 3. `airbnb_use.py` → Airbnb Search Output
+
+- **Input query:** _"Find me a place to stay in Barcelona for 2 adults for one week, starting November 1st, 2025. Show me the top 3 options."_
+- **Server used:** `@openbnb/mcp-server-airbnb`
+- **Output:** A printed **"Result:"** paragraph listing the **top 3 Airbnb listings** (name, price, rating, link).
+
+### 4. `blender_use.py` → 3D Scene Creation Output
+
+- **Input query:** _"Create an inflatable cube with soft material and a plane as ground."_
+- **Server used:** `blender-mcp` (via `uvx`, needs Blender addon running)
+- **Output:** Prints `Result: ...` confirming the cube + plane were created **inside the Blender app** (visual output appears in Blender's 3D viewport, not the terminal).
+- ⚠️ Uses `ChatAnthropic` (needs Anthropic API key).
+
+---
+
+## 📁 `for_practice/` folder
+
+### 5. `filesystem_use.py` → File Listing Output
+
+- **Input query:** _"Hello can you give me a list of files and directories in the current directory"_
+- **Server used:** `@modelcontextprotocol/server-filesystem`
+- **Output:** `Result: ...` followed by a **list of files/folders** in the configured directory.
+- ⚠️ Hardcoded path `/home/pietro/projects/mcp-use/` — change it to your own path.
+
+### 6. `multi_server_example.py` → Combined Multi-Server Output
+
+- **Input query:** _"Search for a nice place to stay in Barcelona on Airbnb, then use Google to find nearby restaurants and attractions. Write the result in the current directory in restarant.txt"_
+- **Servers used:** Airbnb + Playwright + Filesystem (**3 servers at once**)
+- **Output:**
+  1. Airbnb search results
+  2. Google search results for restaurants/attractions
+  3. A new file **`restarant.txt`** created on disk containing the combined results
+  4. Final summary printed to terminal.
+
+### 7. `http_example.py` → Remote (HTTP/SSE) Server Output
+
+- Connects to a Playwright MCP server already running on `http://localhost:8931/sse`
+- **Input query:** _"Find the best restaurant in San Francisco USING GOOGLE SEARCH"_
+- **Output:** Same as browser_use.py — Google search results summarized as text.
+- ⚠️ Uses `ChatOpenAI(model="gpt-4o")` — needs OpenAI key. You must first run `npx @playwright/mcp@latest --port 8931` in another terminal.
+
+---
+
+## 🔑 Common Output Pattern (All Scripts)
+
+Every script follows the same console output flow:
+
+1. **Initialization** – connects to MCP server, discovers available tools
+2. **Agent steps** – LLM decides which MCP tool to call (browser, search, file ops…)
+3. **`Result: <final natural-language answer>`** – printed at the end
+
+## ⚠️ Key Notes
+
+- **Default LLM is free local Ollama** (`llama3.2:3b`) in Demo scripts — set `USE_LOCAL_LLM=false` + `GROQ_API_KEY` in `.env` to use Groq instead.
+- `blender_use.py`, `multi_server_example.py`, and `http_example.py` still use **Anthropic/OpenAI** directly — they will fail without those API keys.
+- You need **Node.js (npx)** installed for the MCP servers to launch.
 
 # 🧠 MCP (Model Context Protocol) — Complete Beginner's Guide
 
