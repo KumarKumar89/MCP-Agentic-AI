@@ -78,7 +78,7 @@ async def run_agent_stream(script_name: str, query: str):
         yield sse("error", {"message": f"Unsupported script: {script_name}"})
         return
 
-    config_rel, agent_kwargs, _default_query = SCRIPTS[script_name]
+    config_rel, agent_options, _default_query = SCRIPTS[script_name]
     config_file = os.path.join(BASE_DIR, config_rel)
 
     started = time.time()
@@ -100,6 +100,7 @@ async def run_agent_stream(script_name: str, query: str):
     servers = ", ".join(client.get_servers()) if hasattr(client, "get_servers") else "?"
     yield sse("log", {"text": f"LLM ready: {model_name} · server(s): {servers}"})
 
+    agent_kwargs = dict(agent_options)
     max_steps = int(agent_kwargs.pop("max_steps", 15))
     agent = MCPAgent(llm=llm, client=client, max_steps=max_steps, **agent_kwargs)
 
