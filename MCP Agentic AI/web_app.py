@@ -7,10 +7,21 @@ from typing import Any
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from langchain_openai import ChatOpenAI
 from mcp_use import MCPAgent, MCPClient
 
 app = FastAPI(title="MCP-Agentic-AI Web UI", version="1.1.0")
+# Enable CORS so the frontend can be hosted on a different origin if needed.
+# In production, restrict allow_origins to the specific frontend origin(s).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(BASE_DIR, "mcp_demo_interface.html")
 APP_HOST = os.getenv("HOST", "0.0.0.0")
