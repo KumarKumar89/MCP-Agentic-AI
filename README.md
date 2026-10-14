@@ -76,7 +76,7 @@ This repo is a **demo/tutorial project** built on top of [mcp-use](https://githu
 
 ### 3. `airbnb_use.py` → Airbnb Search Output
 
-- **Input query:** _"Find me a place to stay in Barcelona for 2 adults for one week, starting November 1st, 2025. Show me the top 3 options."_
+- **Input query:** _"Find me a place to stay in Barcelona for 2 adults for one week, starting November 1st, 2026. Show me the top 3 options."_
 - **Server used:** `@openbnb/mcp-server-airbnb`
 - **Output:** A printed **"Result:"** paragraph listing the **top 3 Airbnb listings** (name, price, rating, link).
 
